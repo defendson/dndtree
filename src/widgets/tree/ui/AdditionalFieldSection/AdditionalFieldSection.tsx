@@ -34,14 +34,16 @@ function AdditionalFieldSectionContent({
 }: AdditionalFieldSectionContentProps) {
   return (
     <AdditionalFieldSectionRoot>
-      <AdditionalFieldSectionHeader $hasHandle={!preview}>
+      <AdditionalFieldSectionHeader $hasHandle>
         {section.name}
-        {!preview ? (
-          <DragHandle
-            label={`Переместить секцию «${section.name}»`}
-            handleProps={sectionHandleProps}
-          />
-        ) : null}
+        <DragHandle
+          label={`Переместить секцию «${section.name}»`}
+          handleProps={
+            preview
+              ? { 'aria-hidden': true, tabIndex: -1 }
+              : sectionHandleProps
+          }
+        />
       </AdditionalFieldSectionHeader>
 
       <AdditionalFieldsList>
@@ -69,15 +71,15 @@ function AdditionalFieldSectionContent({
         {section.additionalFields.length === 0 ? (
           <EmptyAdditionalFields aria-hidden="true" />
         ) : null}
-        {!preview ? (
-          <AddFieldButton
-            type="dashed"
-            block
-            onClick={() => onAddField?.(section.guid)}
-          >
-            Добавить поле
-          </AddFieldButton>
-        ) : null}
+        <AddFieldButton
+          type="dashed"
+          block
+          aria-hidden={preview || undefined}
+          tabIndex={preview ? -1 : undefined}
+          onClick={preview ? undefined : () => onAddField?.(section.guid)}
+        >
+          Добавить поле
+        </AddFieldButton>
       </AdditionalFieldsList>
     </AdditionalFieldSectionRoot>
   )

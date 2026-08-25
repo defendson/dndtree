@@ -90,6 +90,7 @@ const overlayStyles = css`
   border-radius: 10px;
   box-shadow: 0 18px 44px rgb(26 32 44 / 18%);
   transform: rotate(0.35deg);
+  pointer-events: none;
 `
 
 export const AdditionalFieldSectionOverlay = styled.div`

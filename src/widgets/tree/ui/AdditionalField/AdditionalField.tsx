@@ -18,14 +18,16 @@ function AdditionalFieldContent({
   handleProps = {},
 }: AdditionalFieldContentProps) {
   return (
-    <AdditionalFieldRow $hasHandle={!preview}>
+    <AdditionalFieldRow $hasHandle>
       {additionalField.fieldName}
-      {!preview ? (
-        <DragHandle
-          label={`Переместить элемент «${additionalField.fieldName}»`}
-          handleProps={handleProps}
-        />
-      ) : null}
+      <DragHandle
+        label={`Переместить элемент «${additionalField.fieldName}»`}
+        handleProps={
+          preview
+            ? { 'aria-hidden': true, tabIndex: -1 }
+            : handleProps
+        }
+      />
     </AdditionalFieldRow>
   )
 }
