@@ -1,7 +1,9 @@
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ADDITIONAL_FIELD_SECTION_TYPE } from '../../constants/additionalFieldSectionType'
-import { SORTABLE_TRANSITION } from '../../constants/sortableTransition'
+import {
+  ADDITIONAL_FIELD_SECTION_TYPE,
+  SORTABLE_TRANSITION,
+} from '../../constants'
 import type { AdditionalFieldsTreeSection } from '../../types'
 import { AdditionalField, AdditionalFieldPreview } from '../AdditionalField/AdditionalField'
 import { DragHandle } from '../DragHandle/DragHandle'

@@ -4,13 +4,15 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Form } from 'antd'
 import 'antd/dist/reset.css'
 import { createPortal } from 'react-dom'
-import { ADDITIONAL_FIELD_NAMES } from '../../constants/additionalFieldNames'
-import { ADDITIONAL_FIELD_SECTION_TYPE } from '../../constants/additionalFieldSectionType'
-import { ADDITIONAL_FIELD_TYPE } from '../../constants/additionalFieldType'
-import { DROP_ANIMATION } from '../../constants/dropAnimation'
-import { INITIAL_VALUES } from '../../constants/initialValues'
-import { SECTION_FIELD_NAMES } from '../../constants/sectionFieldNames'
-import { useSortableTree } from '../../hooks/useSortableTree'
+import {
+  ADDITIONAL_FIELD_NAMES,
+  ADDITIONAL_FIELD_SECTION_TYPE,
+  ADDITIONAL_FIELD_TYPE,
+  DROP_ANIMATION,
+  INITIAL_VALUES,
+  SECTION_FIELD_NAMES,
+} from '../../constants'
+import { useSortableTree } from '../../hooks'
 import type { TreeFormValues } from '../../types'
 import { AdditionalFieldPreview } from '../AdditionalField/AdditionalField'
 import {

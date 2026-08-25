@@ -1,6 +1,6 @@
 import type { UniqueIdentifier } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { ADDITIONAL_FIELD_SECTION_TYPE } from '../constants/additionalFieldSectionType'
+import { ADDITIONAL_FIELD_SECTION_TYPE } from '../constants'
 import type { ActiveType, TreeFormValues } from '../types'
 import { findSectionGuid } from './findSectionGuid'
 import { flattenAdditionalFieldGroups } from './flattenAdditionalFieldGroups'

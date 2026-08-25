@@ -1,7 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ADDITIONAL_FIELD_TYPE } from '../../constants/additionalFieldType'
-import { SORTABLE_TRANSITION } from '../../constants/sortableTransition'
+import { ADDITIONAL_FIELD_TYPE, SORTABLE_TRANSITION } from '../../constants'
 import type { AdditionalFieldValue } from '../../types'
 import { DragHandle } from '../DragHandle/DragHandle'
 import type { DragHandleProps } from '../DragHandle/DragHandle'

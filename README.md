@@ -9,19 +9,23 @@
 ```text
 src/widgets/tree/
 ├── constants/
+│   └── index.ts
 ├── helpers/
+│   └── index.ts
 ├── hooks/
+│   └── index.ts
 ├── ui/
 │   ├── AdditionalField/
 │   ├── AdditionalFieldSection/
 │   ├── DragHandle/
 │   ├── HiddenListFields/
-│   └── Tree/
+│   ├── Tree/
+│   └── index.ts
 ├── index.ts
 └── types.ts
 ```
 
-Каждая общая константа и чистая helper-функция находится в отдельном файле. Публичный API виджета экспортируется через `src/widgets/tree/index.ts`.
+Каждая общая константа и чистая helper-функция находится в отдельном файле. Папки `constants`, `helpers`, `hooks` и `ui` имеют собственный `index.ts` с реэкспортами, а публичный API виджета экспортируется через `src/widgets/tree/index.ts`.
 
 ## Запуск
 

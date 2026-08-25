@@ -17,15 +17,19 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Form } from 'antd'
 import type { FormInstance } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ADDITIONAL_FIELD_SECTION_TYPE } from '../constants/additionalFieldSectionType'
-import { ADDITIONAL_FIELD_TYPE } from '../constants/additionalFieldType'
-import { INITIAL_VALUES } from '../constants/initialValues'
-import { cloneTreeValues } from '../helpers/cloneTreeValues'
-import { getActiveType } from '../helpers/getActiveType'
-import { getOrderedAdditionalFieldsSections } from '../helpers/getOrderedAdditionalFieldsSections'
-import { groupAdditionalFieldsBySection } from '../helpers/groupAdditionalFieldsBySection'
-import { haveSameTreeValues } from '../helpers/haveSameTreeValues'
-import { reorderTreeValues } from '../helpers/reorderTreeValues'
+import {
+  ADDITIONAL_FIELD_SECTION_TYPE,
+  ADDITIONAL_FIELD_TYPE,
+  INITIAL_VALUES,
+} from '../constants'
+import {
+  cloneTreeValues,
+  getActiveType,
+  getOrderedAdditionalFieldsSections,
+  groupAdditionalFieldsBySection,
+  haveSameTreeValues,
+  reorderTreeValues,
+} from '../helpers'
 import type {
   ActiveType,
   AdditionalFieldsSection,
