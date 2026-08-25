@@ -1,5 +1,7 @@
+import { Global } from '@emotion/react'
+import type { ButtonHTMLAttributes, Ref } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Form, Input } from 'antd'
+import { Form, Input } from 'antd'
 import 'antd/dist/reset.css'
 import {
   closestCenter,
@@ -11,6 +13,13 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
+import type {
+  CollisionDetection,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  UniqueIdentifier,
+} from '@dnd-kit/core'
 import {
   arrayMove,
   rectSortingStrategy,
@@ -20,9 +29,65 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import './App.css'
+import {
+  AddFieldButton,
+  AddSectionButton,
+  appGlobalStyles,
+  ChildrenList,
+  DragHandleButton,
+  DragHandleIcon,
+  EmptyRow,
+  HiddenListFieldsRoot,
+  ItemOverlay,
+  ItemRow,
+  PageShell,
+  SectionOverlay,
+  SectionRow,
+  SectionShell,
+  SortableShell,
+  Tree,
+  TreeSection,
+} from './App.styled'
 
-const INITIAL_VALUES = {
+interface AdditionalFieldsSection {
+  guid: string
+  name: string
+  sort: number
+}
+
+interface AdditionalField {
+  localId: string
+  fieldName: string
+  sectionGuid: string
+  sectionSort: number
+}
+
+interface FormValues {
+  additionalFieldsSections: AdditionalFieldsSection[]
+  additionalFields: AdditionalField[]
+}
+
+interface TreeSectionValue extends AdditionalFieldsSection {
+  additionalFields: AdditionalField[]
+}
+
+type ActiveType = 'additionalFieldSection' | 'additionalField'
+type DragHandleProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  ref?: Ref<HTMLButtonElement>
+}
+
+interface HiddenListField {
+  key: number
+  name: number
+}
+
+function getActiveType(value: unknown): ActiveType | undefined {
+  return value === 'additionalFieldSection' || value === 'additionalField'
+    ? value
+    : undefined
+}
+
+const INITIAL_VALUES: FormValues = {
   additionalFieldsSections: [
     { guid: 'section-research', name: 'Исследование', sort: 0 },
     { guid: 'section-design', name: 'Проектирование', sort: 1 },
@@ -81,8 +146,13 @@ const INITIAL_VALUES = {
   ],
 }
 
-const SECTION_FIELD_NAMES = ['guid', 'name', 'sort']
-const ADDITIONAL_FIELD_NAMES = ['localId', 'fieldName', 'sectionGuid', 'sectionSort']
+const SECTION_FIELD_NAMES = ['guid', 'name', 'sort'] as const
+const ADDITIONAL_FIELD_NAMES = [
+  'localId',
+  'fieldName',
+  'sectionGuid',
+  'sectionSort',
+] as const
 const SORTABLE_TRANSITION = {
   duration: 180,
   easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
@@ -92,12 +162,19 @@ const DROP_ANIMATION = {
   easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
 }
 
-function getOrderedAdditionalFieldsSections(additionalFieldsSections) {
+function getOrderedAdditionalFieldsSections(
+  additionalFieldsSections: AdditionalFieldsSection[],
+) {
   return [...additionalFieldsSections].sort((a, b) => a.sort - b.sort)
 }
 
-function groupAdditionalFieldsBySection(additionalFieldsSections, additionalFields) {
-  const groups = new Map(additionalFieldsSections.map((section) => [section.guid, []]))
+function groupAdditionalFieldsBySection(
+  additionalFieldsSections: AdditionalFieldsSection[],
+  additionalFields: AdditionalField[],
+) {
+  const groups = new Map<string, AdditionalField[]>(
+    additionalFieldsSections.map((section) => [section.guid, []]),
+  )
 
   for (const additionalField of additionalFields) {
     groups.get(additionalField.sectionGuid)?.push(additionalField)
@@ -110,8 +187,11 @@ function groupAdditionalFieldsBySection(additionalFieldsSections, additionalFiel
   return groups
 }
 
-function flattenAdditionalFieldGroups(additionalFieldsSections, groups) {
-  const additionalFields = []
+function flattenAdditionalFieldGroups(
+  additionalFieldsSections: AdditionalFieldsSection[],
+  groups: Map<string, AdditionalField[]>,
+) {
+  const additionalFields: AdditionalField[] = []
 
   for (const section of additionalFieldsSections) {
     const sectionFields = groups.get(section.guid) ?? []
@@ -127,7 +207,7 @@ function flattenAdditionalFieldGroups(additionalFieldsSections, groups) {
   return additionalFields
 }
 
-function cloneTreeValues(values) {
+function cloneTreeValues(values: FormValues): FormValues {
   return {
     additionalFieldsSections: values.additionalFieldsSections.map((section) => ({
       ...section,
@@ -138,13 +218,23 @@ function cloneTreeValues(values) {
   }
 }
 
-function findSectionGuid(id, additionalFieldsSections, additionalFields) {
+function findSectionGuid(
+  id: UniqueIdentifier,
+  additionalFieldsSections: AdditionalFieldsSection[],
+  additionalFields: AdditionalField[],
+): string | undefined {
+  if (typeof id !== 'string') return undefined
   if (additionalFieldsSections.some((section) => section.guid === id)) return id
   return additionalFields.find((additionalField) => additionalField.localId === id)
     ?.sectionGuid
 }
 
-function reorderTreeValues(values, activeId, overId, activeType) {
+function reorderTreeValues(
+  values: FormValues,
+  activeId: UniqueIdentifier,
+  overId: UniqueIdentifier,
+  activeType: ActiveType | undefined,
+): FormValues {
   if (activeId === overId) return values
 
   if (activeType === 'additionalFieldSection') {
@@ -198,6 +288,7 @@ function reorderTreeValues(values, activeId, overId, activeType) {
     groups.set(sourceGuid, arrayMove(sourceFields, oldIndex, targetIndex))
   } else {
     const [movingField] = sourceFields.splice(oldIndex, 1)
+    if (!movingField) return values
     const overIndex = destinationFields.findIndex(
       (additionalField) => additionalField.localId === overId,
     )
@@ -217,7 +308,7 @@ function reorderTreeValues(values, activeId, overId, activeType) {
   }
 }
 
-function haveSameTreeValues(left, right) {
+function haveSameTreeValues(left: FormValues, right: FormValues) {
   if (
     left.additionalFieldsSections.length !== right.additionalFieldsSections.length ||
     left.additionalFields.length !== right.additionalFields.length
@@ -261,9 +352,14 @@ function usePrefersReducedMotion() {
   return prefersReducedMotion
 }
 
-function HiddenListFields({ fields, names }) {
+interface HiddenListFieldsProps {
+  fields: HiddenListField[]
+  names: readonly string[]
+}
+
+function HiddenListFields({ fields, names }: HiddenListFieldsProps) {
   return (
-    <div className="form-list-hidden" aria-hidden="true">
+    <HiddenListFieldsRoot aria-hidden="true">
       {fields.map((field) => (
         <div key={field.key}>
           {names.map((name) => (
@@ -273,37 +369,47 @@ function HiddenListFields({ fields, names }) {
           ))}
         </div>
       ))}
-    </div>
+    </HiddenListFieldsRoot>
   )
 }
 
-function DragHandle({ label, handleProps }) {
+interface DragHandleComponentProps {
+  label: string
+  handleProps: DragHandleProps
+}
+
+function DragHandle({ label, handleProps }: DragHandleComponentProps) {
   return (
-    <button
+    <DragHandleButton
       type="button"
-      className="drag-handle"
       aria-label={label}
       {...handleProps}
     >
-      <svg
-        className="drag-handle-icon"
-        viewBox="0 0 12 18"
-        aria-hidden="true"
-      >
+      <DragHandleIcon viewBox="0 0 12 18" aria-hidden="true">
         <circle cx="3" cy="3" r="1.5" />
         <circle cx="9" cy="3" r="1.5" />
         <circle cx="3" cy="9" r="1.5" />
         <circle cx="9" cy="9" r="1.5" />
         <circle cx="3" cy="15" r="1.5" />
         <circle cx="9" cy="15" r="1.5" />
-      </svg>
-    </button>
+      </DragHandleIcon>
+    </DragHandleButton>
   )
 }
 
-function AdditionalFieldRowContent({ additionalField, preview = false, handleProps = {} }) {
+interface AdditionalFieldRowContentProps {
+  additionalField: AdditionalField
+  preview?: boolean
+  handleProps?: DragHandleProps
+}
+
+function AdditionalFieldRowContent({
+  additionalField,
+  preview = false,
+  handleProps = {},
+}: AdditionalFieldRowContentProps) {
   return (
-    <div className={`item-row${preview ? ' is-preview' : ''}`}>
+    <ItemRow $hasHandle={!preview}>
       {additionalField.fieldName}
       {!preview ? (
         <DragHandle
@@ -311,11 +417,19 @@ function AdditionalFieldRowContent({ additionalField, preview = false, handlePro
           handleProps={handleProps}
         />
       ) : null}
-    </div>
+    </ItemRow>
   )
 }
 
-function SortableAdditionalField({ additionalField, prefersReducedMotion }) {
+interface SortableAdditionalFieldProps {
+  additionalField: AdditionalField
+  prefersReducedMotion: boolean
+}
+
+function SortableAdditionalField({
+  additionalField,
+  prefersReducedMotion,
+}: SortableAdditionalFieldProps) {
   const {
     attributes,
     listeners,
@@ -331,17 +445,25 @@ function SortableAdditionalField({ additionalField, prefersReducedMotion }) {
   })
 
   return (
-    <div
+    <SortableShell
       ref={setNodeRef}
-      className={isDragging ? 'sortable-shell is-dragging' : 'sortable-shell'}
+      $isDragging={isDragging}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
       <AdditionalFieldRowContent
         additionalField={additionalField}
         handleProps={{ ref: setActivatorNodeRef, ...attributes, ...listeners }}
       />
-    </div>
+    </SortableShell>
   )
+}
+
+interface SectionContentProps {
+  section: TreeSectionValue
+  preview?: boolean
+  sectionHandleProps?: DragHandleProps
+  onAddField?: (sectionGuid: string) => void
+  prefersReducedMotion?: boolean
 }
 
 function SectionContent({
@@ -350,10 +472,10 @@ function SectionContent({
   sectionHandleProps = {},
   onAddField,
   prefersReducedMotion = false,
-}) {
+}: SectionContentProps) {
   return (
-    <div className={`tree-section${preview ? ' is-preview' : ''}`}>
-      <div className="section-row">
+    <TreeSection>
+      <SectionRow $hasHandle={!preview}>
         {section.name}
         {!preview ? (
           <DragHandle
@@ -361,9 +483,9 @@ function SectionContent({
             handleProps={sectionHandleProps}
           />
         ) : null}
-      </div>
+      </SectionRow>
 
-      <div className="children-list">
+      <ChildrenList>
         {preview ? (
           section.additionalFields.map((additionalField) => (
             <AdditionalFieldRowContent
@@ -387,24 +509,33 @@ function SectionContent({
           </SortableContext>
         )}
         {section.additionalFields.length === 0 ? (
-          <div className="empty-row" aria-hidden="true" />
+          <EmptyRow aria-hidden="true" />
         ) : null}
         {!preview ? (
-          <Button
-            className="add-field-button"
+          <AddFieldButton
             type="dashed"
             block
-            onClick={() => onAddField(section.guid)}
+            onClick={() => onAddField?.(section.guid)}
           >
             Добавить поле
-          </Button>
+          </AddFieldButton>
         ) : null}
-      </div>
-    </div>
+      </ChildrenList>
+    </TreeSection>
   )
 }
 
-function SortableSection({ section, onAddField, prefersReducedMotion }) {
+interface SortableSectionProps {
+  section: TreeSectionValue
+  onAddField: (sectionGuid: string) => void
+  prefersReducedMotion: boolean
+}
+
+function SortableSection({
+  section,
+  onAddField,
+  prefersReducedMotion,
+}: SortableSectionProps) {
   const {
     active,
     attributes,
@@ -424,9 +555,10 @@ function SortableSection({ section, onAddField, prefersReducedMotion }) {
   const showDropIndicator = isOver && active?.data.current?.type === 'additionalFieldSection'
 
   return (
-    <div
+    <SectionShell
       ref={setNodeRef}
-      className={`section-shell${isDragging ? ' is-dragging' : ''}${showDropIndicator ? ' show-drop-indicator' : ''}`}
+      $isDragging={isDragging}
+      $showDropIndicator={showDropIndicator}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
       <SectionContent
@@ -435,24 +567,26 @@ function SortableSection({ section, onAddField, prefersReducedMotion }) {
         prefersReducedMotion={prefersReducedMotion}
         sectionHandleProps={{ ref: setActivatorNodeRef, ...attributes, ...listeners }}
       />
-    </div>
+    </SectionShell>
   )
 }
 
 function App() {
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<FormValues>()
   const watchedAdditionalFieldsSections =
-    Form.useWatch('additionalFieldsSections', form) ?? INITIAL_VALUES.additionalFieldsSections
+    Form.useWatch<AdditionalFieldsSection[]>('additionalFieldsSections', form) ??
+    INITIAL_VALUES.additionalFieldsSections
   const watchedAdditionalFields =
-    Form.useWatch('additionalFields', form) ?? INITIAL_VALUES.additionalFields
-  const [activeId, setActiveId] = useState(null)
-  const [activeType, setActiveType] = useState(null)
-  const [dragValues, setDragValues] = useState(null)
-  const dragValuesRef = useRef(null)
-  const pendingFormValuesRef = useRef(null)
+    Form.useWatch<AdditionalField[]>('additionalFields', form) ??
+    INITIAL_VALUES.additionalFields
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
+  const [activeType, setActiveType] = useState<ActiveType | null>(null)
+  const [dragValues, setDragValues] = useState<FormValues | null>(null)
+  const dragValuesRef = useRef<FormValues | null>(null)
+  const pendingFormValuesRef = useRef<FormValues | null>(null)
   const prefersReducedMotion = usePrefersReducedMotion()
 
-  const formValues = useMemo(
+  const formValues = useMemo<FormValues>(
     () => ({
       additionalFieldsSections: getOrderedAdditionalFieldsSections(
         watchedAdditionalFieldsSections,
@@ -471,7 +605,7 @@ function App() {
     () => groupAdditionalFieldsBySection(additionalFieldsSections, visualValues.additionalFields),
     [additionalFieldsSections, visualValues.additionalFields],
   )
-  const treeSections = useMemo(
+  const treeSections = useMemo<TreeSectionValue[]>(
     () =>
       additionalFieldsSections.map((section) => ({
         ...section,
@@ -514,7 +648,7 @@ function App() {
     setDragValues(null)
   }, [activeId, formValues])
 
-  const collisionDetection = useCallback((args) => {
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
     if (args.active.data.current?.type === 'additionalFieldSection') {
       const sectionContainers = args.droppableContainers.filter(
         (container) => container.data.current?.type === 'additionalFieldSection',
@@ -532,8 +666,11 @@ function App() {
     return closestCenter(args)
   }, [])
 
-  const getCurrentValues = () => {
-    const values = form.getFieldsValue(['additionalFieldsSections', 'additionalFields'])
+  const getCurrentValues = (): FormValues => {
+    const values = form.getFieldsValue([
+      'additionalFieldsSections',
+      'additionalFields',
+    ]) as Partial<FormValues>
     return {
       additionalFieldsSections: getOrderedAdditionalFieldsSections(
         values.additionalFieldsSections ?? [],
@@ -542,23 +679,23 @@ function App() {
     }
   }
 
-  const handleDragStart = ({ active }) => {
+  const handleDragStart = ({ active }: DragStartEvent) => {
     const current = cloneTreeValues(getCurrentValues())
     dragValuesRef.current = current
     pendingFormValuesRef.current = null
     setDragValues(current)
     setActiveId(active.id)
-    setActiveType(active.data.current?.type ?? null)
+    setActiveType(getActiveType(active.data.current?.type) ?? null)
   }
 
-  const handleDragOver = ({ active, over }) => {
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over || !dragValuesRef.current) return
 
     const nextValues = reorderTreeValues(
       dragValuesRef.current,
       active.id,
       over.id,
-      active.data.current?.type,
+      getActiveType(active.data.current?.type),
     )
     if (nextValues === dragValuesRef.current) return
 
@@ -571,7 +708,7 @@ function App() {
     setActiveType(null)
   }
 
-  const handleDragEnd = ({ over }) => {
+  const handleDragEnd = ({ over }: DragEndEvent) => {
     const finalValues = dragValuesRef.current
     if (!over || !finalValues) {
       handleDragCancel()
@@ -591,7 +728,8 @@ function App() {
   }
 
   const handleAddSection = () => {
-    const currentSections = form.getFieldValue('additionalFieldsSections') ?? []
+    const currentSections: AdditionalFieldsSection[] =
+      form.getFieldValue('additionalFieldsSections') ?? []
     form.setFieldValue('additionalFieldsSections', [
       ...currentSections,
       {
@@ -602,8 +740,9 @@ function App() {
     ])
   }
 
-  const handleAddField = (sectionGuid) => {
-    const currentAdditionalFields = form.getFieldValue('additionalFields') ?? []
+  const handleAddField = (sectionGuid: string) => {
+    const currentAdditionalFields: AdditionalField[] =
+      form.getFieldValue('additionalFields') ?? []
     const nextSectionSort = currentAdditionalFields.reduce((highestSort, additionalField) => {
       if (additionalField.sectionGuid !== sectionGuid) return highestSort
       return Math.max(highestSort, Number(additionalField.sectionSort))
@@ -621,8 +760,10 @@ function App() {
   }
 
   return (
-    <main className="page-shell">
-      <Form form={form} initialValues={INITIAL_VALUES} className="tree-form">
+    <>
+      <Global styles={appGlobalStyles} />
+      <PageShell>
+        <Form form={form} initialValues={INITIAL_VALUES}>
         <Form.List name="additionalFields">
           {(additionalFieldEntries) => (
             <HiddenListFields
@@ -650,7 +791,7 @@ function App() {
             items={treeSections.map((section) => section.guid)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="tree" aria-label="Сортируемое дерево проекта">
+            <Tree aria-label="Сортируемое дерево проекта">
               {treeSections.map((section) => (
                 <SortableSection
                   key={section.guid}
@@ -659,36 +800,36 @@ function App() {
                   prefersReducedMotion={prefersReducedMotion}
                 />
               ))}
-            </div>
+            </Tree>
           </SortableContext>
 
           <DragOverlay dropAnimation={prefersReducedMotion ? null : DROP_ANIMATION}>
             {activeType === 'additionalFieldSection' && activeAdditionalFieldsSection ? (
-              <div className="section-overlay">
+              <SectionOverlay>
                 <SectionContent section={activeAdditionalFieldsSection} preview />
-              </div>
+              </SectionOverlay>
             ) : null}
             {activeType === 'additionalField' && activeAdditionalField ? (
-              <div className="item-overlay">
+              <ItemOverlay>
                 <AdditionalFieldRowContent
                   additionalField={activeAdditionalField}
                   preview
                 />
-              </div>
+              </ItemOverlay>
             ) : null}
           </DragOverlay>
         </DndContext>
 
-        <Button
-          className="add-section-button"
+          <AddSectionButton
           type="dashed"
           block
           onClick={handleAddSection}
         >
           Добавить раздел
-        </Button>
-      </Form>
-    </main>
+          </AddSectionButton>
+        </Form>
+      </PageShell>
+    </>
   )
 }
 
