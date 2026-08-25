@@ -1,24 +1,30 @@
+import { BusinessProcessFormFields } from '../constants'
 import type { TreeFormValues } from '../types'
 
 export function haveSameTreeValues(left: TreeFormValues, right: TreeFormValues) {
+  const leftSections = left[BusinessProcessFormFields.additionalFieldsSections]
+  const rightSections = right[BusinessProcessFormFields.additionalFieldsSections]
+  const leftFields = left[BusinessProcessFormFields.additionalFields]
+  const rightFields = right[BusinessProcessFormFields.additionalFields]
+
   if (
-    left.additionalFieldsSections.length !== right.additionalFieldsSections.length ||
-    left.additionalFields.length !== right.additionalFields.length
+    leftSections.length !== rightSections.length ||
+    leftFields.length !== rightFields.length
   ) {
     return false
   }
 
   return (
-    left.additionalFieldsSections.every((section, index) => {
-      const rightSection = right.additionalFieldsSections[index]
+    leftSections.every((section, index) => {
+      const rightSection = rightSections[index]
       return (
         rightSection?.guid === section.guid &&
         rightSection.name === section.name &&
         rightSection.sort === section.sort
       )
     }) &&
-    left.additionalFields.every((additionalField, index) => {
-      const rightAdditionalField = right.additionalFields[index]
+    leftFields.every((additionalField, index) => {
+      const rightAdditionalField = rightFields[index]
       return (
         rightAdditionalField?.localId === additionalField.localId &&
         rightAdditionalField.fieldName === additionalField.fieldName &&

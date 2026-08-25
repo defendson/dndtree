@@ -1,6 +1,7 @@
 export * from './additionalFieldNames'
 export * from './additionalFieldSectionType'
 export * from './additionalFieldType'
+export * from './businessProcessFormFields'
 export * from './dropAnimation'
 export * from './initialValues'
 export * from './sectionFieldNames'

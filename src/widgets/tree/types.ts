@@ -1,3 +1,5 @@
+import { BusinessProcessFormFields } from './constants/businessProcessFormFields'
+
 export interface AdditionalFieldsSection {
   guid: string
   name: string
@@ -12,8 +14,8 @@ export interface AdditionalFieldValue {
 }
 
 export interface TreeFormValues {
-  additionalFieldsSections: AdditionalFieldsSection[]
-  additionalFields: AdditionalFieldValue[]
+  [BusinessProcessFormFields.additionalFieldsSections]: AdditionalFieldsSection[]
+  [BusinessProcessFormFields.additionalFields]: AdditionalFieldValue[]
 }
 
 export interface AdditionalFieldsTreeSection extends AdditionalFieldsSection {

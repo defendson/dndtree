@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ADDITIONAL_FIELD_SECTION_TYPE,
   ADDITIONAL_FIELD_TYPE,
+  BusinessProcessFormFields,
   INITIAL_VALUES,
 } from '../constants'
 import {
@@ -41,11 +42,15 @@ import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 
 export function useSortableTree(form: FormInstance<TreeFormValues>) {
   const watchedAdditionalFieldsSections =
-    Form.useWatch<AdditionalFieldsSection[]>('additionalFieldsSections', form) ??
-    INITIAL_VALUES.additionalFieldsSections
+    Form.useWatch<AdditionalFieldsSection[]>(
+      BusinessProcessFormFields.additionalFieldsSections,
+      form,
+    ) ?? INITIAL_VALUES[BusinessProcessFormFields.additionalFieldsSections]
   const watchedAdditionalFields =
-    Form.useWatch<AdditionalFieldValue[]>('additionalFields', form) ??
-    INITIAL_VALUES.additionalFields
+    Form.useWatch<AdditionalFieldValue[]>(
+      BusinessProcessFormFields.additionalFields,
+      form,
+    ) ?? INITIAL_VALUES[BusinessProcessFormFields.additionalFields]
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
   const [activeType, setActiveType] = useState<ActiveType | null>(null)
   const [dragValues, setDragValues] = useState<TreeFormValues | null>(null)
@@ -55,22 +60,25 @@ export function useSortableTree(form: FormInstance<TreeFormValues>) {
 
   const formValues = useMemo<TreeFormValues>(
     () => ({
-      additionalFieldsSections: getOrderedAdditionalFieldsSections(
-        watchedAdditionalFieldsSections,
-      ),
-      additionalFields: watchedAdditionalFields,
+      [BusinessProcessFormFields.additionalFieldsSections]:
+        getOrderedAdditionalFieldsSections(watchedAdditionalFieldsSections),
+      [BusinessProcessFormFields.additionalFields]: watchedAdditionalFields,
     }),
     [watchedAdditionalFields, watchedAdditionalFieldsSections],
   )
   const visualValues = dragValues ?? formValues
+  const visualAdditionalFieldsSections =
+    visualValues[BusinessProcessFormFields.additionalFieldsSections]
+  const visualAdditionalFields =
+    visualValues[BusinessProcessFormFields.additionalFields]
 
   const additionalFieldsSections = useMemo(
-    () => getOrderedAdditionalFieldsSections(visualValues.additionalFieldsSections),
-    [visualValues.additionalFieldsSections],
+    () => getOrderedAdditionalFieldsSections(visualAdditionalFieldsSections),
+    [visualAdditionalFieldsSections],
   )
   const additionalFieldsBySection = useMemo(
-    () => groupAdditionalFieldsBySection(additionalFieldsSections, visualValues.additionalFields),
-    [additionalFieldsSections, visualValues.additionalFields],
+    () => groupAdditionalFieldsBySection(additionalFieldsSections, visualAdditionalFields),
+    [additionalFieldsSections, visualAdditionalFields],
   )
   const treeSections = useMemo<AdditionalFieldsTreeSection[]>(
     () =>
@@ -93,11 +101,11 @@ export function useSortableTree(form: FormInstance<TreeFormValues>) {
   const activeAdditionalField = useMemo(
     () =>
       activeType === ADDITIONAL_FIELD_TYPE
-        ? visualValues.additionalFields.find(
+        ? visualAdditionalFields.find(
             (additionalField) => additionalField.localId === activeId,
           )
         : null,
-    [activeId, activeType, visualValues.additionalFields],
+    [activeId, activeType, visualAdditionalFields],
   )
 
   useEffect(() => {
@@ -139,14 +147,16 @@ export function useSortableTree(form: FormInstance<TreeFormValues>) {
 
   const getCurrentValues = (): TreeFormValues => {
     const values = form.getFieldsValue([
-      'additionalFieldsSections',
-      'additionalFields',
+      BusinessProcessFormFields.additionalFieldsSections,
+      BusinessProcessFormFields.additionalFields,
     ]) as Partial<TreeFormValues>
     return {
-      additionalFieldsSections: getOrderedAdditionalFieldsSections(
-        values.additionalFieldsSections ?? [],
-      ),
-      additionalFields: values.additionalFields ?? [],
+      [BusinessProcessFormFields.additionalFieldsSections]:
+        getOrderedAdditionalFieldsSections(
+          values[BusinessProcessFormFields.additionalFieldsSections] ?? [],
+        ),
+      [BusinessProcessFormFields.additionalFields]:
+        values[BusinessProcessFormFields.additionalFields] ?? [],
     }
   }
 
@@ -200,8 +210,8 @@ export function useSortableTree(form: FormInstance<TreeFormValues>) {
 
   const handleAddSection = () => {
     const currentSections: AdditionalFieldsSection[] =
-      form.getFieldValue('additionalFieldsSections') ?? []
-    form.setFieldValue('additionalFieldsSections', [
+      form.getFieldValue(BusinessProcessFormFields.additionalFieldsSections) ?? []
+    form.setFieldValue(BusinessProcessFormFields.additionalFieldsSections, [
       ...currentSections,
       {
         guid: `section-${crypto.randomUUID()}`,
@@ -213,13 +223,13 @@ export function useSortableTree(form: FormInstance<TreeFormValues>) {
 
   const handleAddField = (sectionGuid: string) => {
     const currentAdditionalFields: AdditionalFieldValue[] =
-      form.getFieldValue('additionalFields') ?? []
+      form.getFieldValue(BusinessProcessFormFields.additionalFields) ?? []
     const nextSectionSort = currentAdditionalFields.reduce((highestSort, additionalField) => {
       if (additionalField.sectionGuid !== sectionGuid) return highestSort
       return Math.max(highestSort, Number(additionalField.sectionSort))
     }, -1) + 1
 
-    form.setFieldValue('additionalFields', [
+    form.setFieldValue(BusinessProcessFormFields.additionalFields, [
       ...currentAdditionalFields,
       {
         localId: `field-${crypto.randomUUID()}`,

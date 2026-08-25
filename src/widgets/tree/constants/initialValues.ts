@@ -1,13 +1,14 @@
 import type { TreeFormValues } from '../types'
+import { BusinessProcessFormFields } from './businessProcessFormFields'
 
 export const INITIAL_VALUES: TreeFormValues = {
-  additionalFieldsSections: [
+  [BusinessProcessFormFields.additionalFieldsSections]: [
     { guid: 'section-research', name: 'Исследование', sort: 0 },
     { guid: 'section-design', name: 'Проектирование', sort: 1 },
     { guid: 'section-build', name: 'Разработка', sort: 2 },
     { guid: 'section-release', name: 'Выпуск', sort: 3 },
   ],
-  additionalFields: [
+  [BusinessProcessFormFields.additionalFields]: [
     {
       localId: 'item-interviews',
       fieldName: 'Интервью с командой',

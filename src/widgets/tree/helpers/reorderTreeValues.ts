@@ -1,6 +1,9 @@
 import type { UniqueIdentifier } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { ADDITIONAL_FIELD_SECTION_TYPE } from '../constants'
+import {
+  ADDITIONAL_FIELD_SECTION_TYPE,
+  BusinessProcessFormFields,
+} from '../constants'
 import type { ActiveType, TreeFormValues } from '../types'
 import { findSectionGuid } from './findSectionGuid'
 import { flattenAdditionalFieldGroups } from './flattenAdditionalFieldGroups'
@@ -14,19 +17,23 @@ export function reorderTreeValues(
 ): TreeFormValues {
   if (activeId === overId) return values
 
+  const additionalFieldsSections =
+    values[BusinessProcessFormFields.additionalFieldsSections]
+  const additionalFields = values[BusinessProcessFormFields.additionalFields]
+
   if (activeType === ADDITIONAL_FIELD_SECTION_TYPE) {
-    const oldIndex = values.additionalFieldsSections.findIndex(
+    const oldIndex = additionalFieldsSections.findIndex(
       (section) => section.guid === activeId,
     )
-    const newIndex = values.additionalFieldsSections.findIndex(
+    const newIndex = additionalFieldsSections.findIndex(
       (section) => section.guid === overId,
     )
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return values
 
     return {
       ...values,
-      additionalFieldsSections: arrayMove(
-        values.additionalFieldsSections,
+      [BusinessProcessFormFields.additionalFieldsSections]: arrayMove(
+        additionalFieldsSections,
         oldIndex,
         newIndex,
       ).map((section, sort) => ({ ...section, sort })),
@@ -35,19 +42,19 @@ export function reorderTreeValues(
 
   const sourceGuid = findSectionGuid(
     activeId,
-    values.additionalFieldsSections,
-    values.additionalFields,
+    additionalFieldsSections,
+    additionalFields,
   )
   const destinationGuid = findSectionGuid(
     overId,
-    values.additionalFieldsSections,
-    values.additionalFields,
+    additionalFieldsSections,
+    additionalFields,
   )
   if (!sourceGuid || !destinationGuid) return values
 
   const groups = groupAdditionalFieldsBySection(
-    values.additionalFieldsSections,
-    values.additionalFields,
+    additionalFieldsSections,
+    additionalFields,
   )
   const sourceFields = groups.get(sourceGuid) ?? []
   const destinationFields = groups.get(destinationGuid) ?? []
@@ -79,8 +86,8 @@ export function reorderTreeValues(
 
   return {
     ...values,
-    additionalFields: flattenAdditionalFieldGroups(
-      values.additionalFieldsSections,
+    [BusinessProcessFormFields.additionalFields]: flattenAdditionalFieldGroups(
+      additionalFieldsSections,
       groups,
     ),
   }

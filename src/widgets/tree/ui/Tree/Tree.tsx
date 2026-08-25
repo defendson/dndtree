@@ -8,6 +8,7 @@ import {
   ADDITIONAL_FIELD_NAMES,
   ADDITIONAL_FIELD_SECTION_TYPE,
   ADDITIONAL_FIELD_TYPE,
+  BusinessProcessFormFields,
   DROP_ANIMATION,
   INITIAL_VALUES,
   SECTION_FIELD_NAMES,
@@ -52,7 +53,7 @@ export function Tree() {
       <Global styles={treeGlobalStyles} />
       <TreePage>
         <Form form={form} initialValues={INITIAL_VALUES}>
-          <Form.List name="additionalFields">
+          <Form.List name={BusinessProcessFormFields.additionalFields}>
             {(additionalFieldEntries) => (
               <HiddenListFields
                 fields={additionalFieldEntries}
@@ -61,7 +62,7 @@ export function Tree() {
             )}
           </Form.List>
 
-          <Form.List name="additionalFieldsSections">
+          <Form.List name={BusinessProcessFormFields.additionalFieldsSections}>
             {(sectionFields) => (
               <HiddenListFields fields={sectionFields} names={SECTION_FIELD_NAMES} />
             )}

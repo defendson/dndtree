@@ -1,12 +1,13 @@
+import { BusinessProcessFormFields } from '../constants'
 import type { TreeFormValues } from '../types'
 
 export function cloneTreeValues(values: TreeFormValues): TreeFormValues {
   return {
-    additionalFieldsSections: values.additionalFieldsSections.map((section) => ({
-      ...section,
-    })),
-    additionalFields: values.additionalFields.map((additionalField) => ({
-      ...additionalField,
-    })),
+    [BusinessProcessFormFields.additionalFieldsSections]: values[
+      BusinessProcessFormFields.additionalFieldsSections
+    ].map((section) => ({ ...section })),
+    [BusinessProcessFormFields.additionalFields]: values[
+      BusinessProcessFormFields.additionalFields
+    ].map((additionalField) => ({ ...additionalField })),
   }
 }
