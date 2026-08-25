@@ -1,6 +1,7 @@
 import { Global } from '@emotion/react'
 import type { ButtonHTMLAttributes, Ref } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Form, Input } from 'antd'
 import 'antd/dist/reset.css'
 import {
@@ -653,7 +654,11 @@ function App() {
       const sectionContainers = args.droppableContainers.filter(
         (container) => container.data.current?.type === 'additionalFieldSection',
       )
-      return closestCenter({ ...args, droppableContainers: sectionContainers })
+      const sectionArgs = { ...args, droppableContainers: sectionContainers }
+
+      return args.pointerCoordinates
+        ? pointerWithin(sectionArgs)
+        : closestCenter(sectionArgs)
     }
 
     const collisions = pointerWithin(args)
@@ -663,7 +668,7 @@ function App() {
     )
     if (additionalFieldCollisions.length > 0) return additionalFieldCollisions
     if (collisions.length > 0) return collisions
-    return closestCenter(args)
+    return args.pointerCoordinates ? [] : closestCenter(args)
   }, [])
 
   const getCurrentValues = (): FormValues => {
@@ -764,68 +769,71 @@ function App() {
       <Global styles={appGlobalStyles} />
       <PageShell>
         <Form form={form} initialValues={INITIAL_VALUES}>
-        <Form.List name="additionalFields">
-          {(additionalFieldEntries) => (
-            <HiddenListFields
-              fields={additionalFieldEntries}
-              names={ADDITIONAL_FIELD_NAMES}
-            />
-          )}
-        </Form.List>
+          <Form.List name="additionalFields">
+            {(additionalFieldEntries) => (
+              <HiddenListFields
+                fields={additionalFieldEntries}
+                names={ADDITIONAL_FIELD_NAMES}
+              />
+            )}
+          </Form.List>
 
-        <Form.List name="additionalFieldsSections">
-          {(sectionFields) => (
-            <HiddenListFields fields={sectionFields} names={SECTION_FIELD_NAMES} />
-          )}
-        </Form.List>
+          <Form.List name="additionalFieldsSections">
+            {(sectionFields) => (
+              <HiddenListFields fields={sectionFields} names={SECTION_FIELD_NAMES} />
+            )}
+          </Form.List>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={collisionDetection}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
-        >
-          <SortableContext
-            items={treeSections.map((section) => section.guid)}
-            strategy={verticalListSortingStrategy}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={collisionDetection}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
-            <Tree aria-label="Сортируемое дерево проекта">
-              {treeSections.map((section) => (
-                <SortableSection
-                  key={section.guid}
-                  section={section}
-                  onAddField={handleAddField}
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              ))}
-            </Tree>
-          </SortableContext>
+            <SortableContext
+              items={treeSections.map((section) => section.guid)}
+              strategy={verticalListSortingStrategy}
+            >
+              <Tree aria-label="Сортируемое дерево проекта">
+                {treeSections.map((section) => (
+                  <SortableSection
+                    key={section.guid}
+                    section={section}
+                    onAddField={handleAddField}
+                    prefersReducedMotion={prefersReducedMotion}
+                  />
+                ))}
+              </Tree>
+            </SortableContext>
 
-          <DragOverlay dropAnimation={prefersReducedMotion ? null : DROP_ANIMATION}>
-            {activeType === 'additionalFieldSection' && activeAdditionalFieldsSection ? (
-              <SectionOverlay>
-                <SectionContent section={activeAdditionalFieldsSection} preview />
-              </SectionOverlay>
-            ) : null}
-            {activeType === 'additionalField' && activeAdditionalField ? (
-              <ItemOverlay>
-                <AdditionalFieldRowContent
-                  additionalField={activeAdditionalField}
-                  preview
-                />
-              </ItemOverlay>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+            {createPortal(
+              <DragOverlay dropAnimation={prefersReducedMotion ? null : DROP_ANIMATION}>
+                {activeType === 'additionalFieldSection' && activeAdditionalFieldsSection ? (
+                  <SectionOverlay>
+                    <SectionContent section={activeAdditionalFieldsSection} preview />
+                  </SectionOverlay>
+                ) : null}
+                {activeType === 'additionalField' && activeAdditionalField ? (
+                  <ItemOverlay>
+                    <AdditionalFieldRowContent
+                      additionalField={activeAdditionalField}
+                      preview
+                    />
+                  </ItemOverlay>
+                ) : null}
+              </DragOverlay>,
+              document.body,
+            )}
+          </DndContext>
 
           <AddSectionButton
-          type="dashed"
-          block
-          onClick={handleAddSection}
-        >
-          Добавить раздел
+            type="dashed"
+            block
+            onClick={handleAddSection}
+          >
+            Добавить раздел
           </AddSectionButton>
         </Form>
       </PageShell>

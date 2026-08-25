@@ -260,10 +260,10 @@ const overlayStyles = css`
 
 export const SectionOverlay = styled.div`
   ${overlayStyles};
-  width: min(600px, 82vw);
+  width: 100%;
 `
 
 export const ItemOverlay = styled.div`
   ${overlayStyles};
-  width: min(180px, 74vw);
+  width: 100%;
 `
